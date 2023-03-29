@@ -5,6 +5,7 @@
 This repository contains the implementation of a Deep Learning Framework based on Conditional Variational Autoencoder (CVAE) for the generation of a non-linear and efficient ROM for the prediction of the transonic aerodynamic simulations, but can be simply used for to the prediction of general non-linear 2D simulations. 
 The description of the problem and the dataset can be found in the paper of of G.Catalani et al. [**" A comparative study of learning techniques for the compressible aerodynamics over a transonic RAE2822 airfoil"**](https://www.sciencedirect.com/science/article/abs/pii/S0045793022003516). Compared to the paper the Deep Learning framework based on a UNet is replaced with a Conditional Variational Autoencoder.
 
+<img src="https://github.com/giovannicatalani/Aerodynamic-VAE/blob/main/images/recon_beta1_lat10.png" width="600" />
 
 <!-- TABLE OF CONTENTS -->
 ## Table of Contents
@@ -33,6 +34,8 @@ The database consist of 2D simulations over the RAE 2822 transonic airfoil at Re
 
 The simulations are interpolated on a pixel like grid in order to allow for convolution trhough standard convolutions.
 
+<img src="https://github.com/giovannicatalani/Aerodynamic-VAE/blob/main/images/airfoil.png" width="600" />
+
 ### Configuration
 
 The clone the repository:
@@ -47,6 +50,8 @@ conda env create -f env_rom.yml
 
 ### Results
 
+<img src="https://github.com/giovannicatalani/Aerodynamic-VAE/blob/main/images/recon_images.png" width="600" />
 
+<img src="https://github.com/giovannicatalani/Aerodynamic-VAE/blob/main/images/lat_spaces.png" width="600" />
 
 ### Contributing
