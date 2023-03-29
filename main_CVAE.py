@@ -16,8 +16,8 @@ from DataLoader import DataLoader
 # Directories
 #data_directory = '/content/drive/MyDrive/Thesis NLR/data/'
 data_directory = 'D:/Transonic_VAE/data/'
-model_path = 'D:/Transonic_VAE/CVAE_ROM/models_trained/best_model_CVAE_beta1_lat10.pt'
-best_model_path = 'D:/Transonic_VAE/CVAE_ROM/models_trained/Autoencoder/best_model_CVAE_beta1_lat10.pt'
+model_path = 'D:/Transonic_VAE/CVAE_ROM/models_trained/best_model_CVAE_beta20_lat10.pt'
+best_model_path = 'D:/Transonic_VAE/CVAE_ROM/models_trained/Autoencoder/best_model_CVAE_beta20_lat10.pt'
 
 #Options
 train_model = False #If false pretrained best model is used for inference
@@ -101,7 +101,7 @@ if train_model:
 pred_train, true_train, control_train, mu_train, log_var_train = reconstruct(model_CVAE,model_path,train_loader,p_mean,p_std,control_mean,control_std,device='cpu')
 
 #%% Plotting Reconstruction and Latent Space Visualization
-k=19 #Idx of snapshot to plot
+k=21 #Idx of snapshot to plot
 plot_writer(data_directory,res,pred_train,true_train,control_train,k,mu=mu_train,latent_plot=True)   
 
 #%%Prediction on test set
