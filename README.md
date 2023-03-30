@@ -34,7 +34,7 @@ The database consist of 2D simulations over the RAE 2822 transonic airfoil at Re
 
 The simulations are interpolated on a pixel like grid in order to allow for convolution trhough standard convolutions.
 
-<img src="https://github.com/giovannicatalani/Aerodynamic-VAE/blob/main/images/airfoil.png" width="600" />
+<img src="https://github.com/giovannicatalani/Aerodynamic-VAE/blob/main/images/airfoil.jpg" width="600" />
 
 ### Configuration
 
