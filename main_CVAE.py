@@ -101,7 +101,7 @@ if train_model:
 pred_train, true_train, control_train, mu_train, log_var_train = reconstruct(model_CVAE,model_path,train_loader,p_mean,p_std,control_mean,control_std,device='cpu')
 
 #%% Plotting Reconstruction and Latent Space Visualization
-k=21 #Idx of snapshot to plot
+k=20 #Idx of snapshot to plot
 plot_writer(data_directory,res,pred_train,true_train,control_train,k,mu=mu_train,latent_plot=True)   
 
 #%%Prediction on test set
