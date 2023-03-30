@@ -201,7 +201,6 @@ def plot_writer(data_directory,res,P_pred,P_true,control,k,mu=None,latent_plot =
         ax1 = plt.subplot2grid((1, 2), (0, 0))
         ax2 = plt.subplot2grid((1, 2), (0, 1))
     
-    
         im = ax1.scatter(mu[:, 0], mu[:, 1], c=M[:len(mu)], cmap='viridis',s = 1)
         ax1.set_xlabel('Latent dimension 1')
         ax1.set_ylabel('Latent dimension 2')
@@ -211,7 +210,6 @@ def plot_writer(data_directory,res,P_pred,P_true,control,k,mu=None,latent_plot =
         ax2.set_xlabel('Latent dimension 1')
         ax2.set_ylabel('Latent dimension 2')
         plt.colorbar(im,ax=ax2)
-    
     
         # Plot the scatter plot
         f = plt.figure(figsize=(8, 3))
