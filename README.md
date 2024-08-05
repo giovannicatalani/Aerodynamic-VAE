@@ -24,6 +24,9 @@ In order to be used for generation of simulation at given values of the inputs v
 The model is trained by maximizing the Evidence Lower Bound (ELBO): the model loss consists of two terms accounting for the reconstruction loss and for the regularity of the latent space (through the KL divergence between the approximated posterior and the prior). These two terms are weighed by the paramter Beta, which can be modulted.
 
 ### Dataset
+Data can be downloaded at:
+https://zenodo.org/records/12700680?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjQyNzI4M2NmLWIwYjktNDc1Ny1hYjA5LTliYjU4YjY4MjFmNCIsImRhdGEiOnt9LCJyYW5kb20iOiI5ZjY5MWIzNWQ5MTRmNGE4ZDdjNmY4ZjI4MTY1NDAyMiJ9._BqW0JKCMiI89PjbTmNOtbvYO6iCBx-hjP4WRPGepV2ufmAlqk_SEmAgbPfqkW9YvjOsh67lHn2jGQ7cg_n1nw
+
 The database consist of 2D simulations over the RAE 2822 transonic airfoil at Reynolds number is set to 6.5 million, corresponding to a typical cruise flight. Two parameters have been considered in this study:
 
 
