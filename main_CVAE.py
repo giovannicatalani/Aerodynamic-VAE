@@ -19,8 +19,8 @@ def parse_args():
                         help='Run training. If not set, runs inference with saved model.')
     parser.add_argument('--data_dir', type=str, default='../data/',
                         help='Path to data directory (default: ../data/)')
-    parser.add_argument('--model_path', type=str, default='../models/best_model_CVAE.pt',
-                        help='Path to save/load model checkpoint (default: ../models/best_model_CVAE.pt)')
+    parser.add_argument('--model_path', type=str, default='./models_trained/best_model_CVAE.pt',
+                        help='Path to save/load model checkpoint (default: ./models_trained/best_model_CVAE.pt)')
     parser.add_argument('--res', type=int, default=128,
                         help='Grid resolution (default: 128). Must match preprocessed data.')
     parser.add_argument('--latent_dim', type=int, default=10,
