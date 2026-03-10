@@ -1,111 +1,145 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Mar 18 15:45:09 2023
-
-@author: giosp
-"""
-
+import argparse
 import torch
 import torch.optim as optim
+import numpy as np
+import matplotlib
+matplotlib.use('Agg') 
+import matplotlib.pyplot as plt
+
 from Model_CVAE import ConditionalVariationalAutoencoder
 from utilities_CVAE import run_epoch, run_val, predict_test, reconstruct, plot_writer
-import numpy as np
-import matplotlib.pyplot as plt
 from DataLoader import DataLoader
 
-# Directories
-#data_directory = '/content/drive/MyDrive/Thesis NLR/data/'
-data_directory = 'D:/Transonic_VAE/data/'
-model_path = 'D:/Transonic_VAE/CVAE_ROM/models_trained/best_model_CVAE_beta20_lat10.pt'
-best_model_path = 'D:/Transonic_VAE/CVAE_ROM/models_trained/Autoencoder/best_model_CVAE_beta20_lat10.pt'
 
-#Options
-train_model = False #If false pretrained best model is used for inference
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='CVAE Reduced-Order Model for Transonic Aerodynamics'
+    )
+    parser.add_argument('--train', action='store_true',
+                        help='Run training. If not set, runs inference with saved model.')
+    parser.add_argument('--data_dir', type=str, default='../data/',
+                        help='Path to data directory (default: ../data/)')
+    parser.add_argument('--model_path', type=str, default='../models/best_model_CVAE.pt',
+                        help='Path to save/load model checkpoint (default: ../models/best_model_CVAE.pt)')
+    parser.add_argument('--res', type=int, default=128,
+                        help='Grid resolution (default: 128). Must match preprocessed data.')
+    parser.add_argument('--latent_dim', type=int, default=10,
+                        help='Latent space dimension (default: 10)')
+    parser.add_argument('--epochs', type=int, default=1000,
+                        help='Number of training epochs (default: 1000)')
+    parser.add_argument('--batch_size', type=int, default=32,
+                        help='Batch size (default: 32)')
+    parser.add_argument('--lr', type=float, default=1e-4,
+                        help='Learning rate (default: 1e-4)')
+    parser.add_argument('--kl_weight', type=float, default=1.0,
+                        help='Weight for KL divergence term / Beta (default: 1.0)')
+    parser.add_argument('--recon_idx', type=int, default=20,
+                        help='Sample index to plot for reconstruction (default: 20)')
+    parser.add_argument('--test_idx', type=int, default=44,
+                        help='Sample index to plot for test prediction (default: 44)')
+    return parser.parse_args()
 
-# Define the device to use for training (e.g. GPU, CPU)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Define the latent dimension for the autoencoder
-latent_dim = 10
-control_dim = 2
-res= 128
+def train(args, model, train_loader, valid_loader, device):
+    optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
+    state = {'best_valid_loss': float('inf')}
+    aux_loss = np.zeros((6, args.epochs))
 
-# Create the models: AE and Hidden MLP
-model_CVAE = ConditionalVariationalAutoencoder(latent_dim, control_dim, res)
+    print(f'Starting training for {args.epochs} epochs...\n')
 
-# Move the models to the device
-model_CVAE = model_CVAE.to(device)
+    for epoch in range(args.epochs):
+        tr_loss, tr_recon, tr_kl = run_epoch(
+            epoch, model, train_loader, optimizer,
+            kl_weight=args.kl_weight, device=device
+        )
+        val_loss, val_recon, val_kl = run_val(
+            epoch, model, valid_loader,
+            kl_weight=args.kl_weight, device=device
+        )
 
-# Define a loss function and optimizer
-optimizer = optim.Adam(model_CVAE.parameters(), lr=0.0001, weight_decay=1e-5)
-batch_size = 32
+        aux_loss[:, epoch] = [tr_loss, tr_recon, tr_kl, val_loss, val_recon, val_kl]
 
-#KL weight
-kl_weight = 1.0
-
-# Import Data and Create Dataset
-train_loader, valid_loader, test_loader, p_mean, p_std, control_mean, control_std = DataLoader(
-    data_directory, res, batch_size)
-
-print('Dataset creation: done \n')
-
-#%% Training
-if train_model:
-    state = {}
-    state['best_valid_loss'] = float('inf')
-    aux_loss = np.empty([6, 1000])  # store loss values
-    print('Starting training \n')
-    for epoch in range(1000):
-        tr_loss, tr_loss_recon, tr_loss_kl = run_epoch(
-            epoch, model_CVAE, train_loader,  optimizer,kl_weight=kl_weight, device=device)
-        valid_loss, valid_loss_recon, valid_loss_kl = run_val(
-            epoch, model_CVAE,  valid_loader, kl_weight=kl_weight, device=device)
-        aux_loss[0, epoch] = tr_loss
-        aux_loss[1, epoch] = tr_loss_recon
-        aux_loss[2, epoch] = tr_loss_kl
-        aux_loss[3, epoch] = valid_loss
-        aux_loss[4, epoch] = valid_loss_recon
-        aux_loss[5, epoch] = valid_loss_kl
-        
-        if valid_loss < state['best_valid_loss']:
-            state['best_valid_loss'] = valid_loss
+        if val_loss < state['best_valid_loss']:
+            state['best_valid_loss'] = val_loss
             state['epoch'] = epoch
-            state['state_dict_CVAE'] = model_CVAE.state_dict()
+            state['state_dict_CVAE'] = model.state_dict()
             state['optimizer_CVAE'] = optimizer.state_dict()
+            torch.save(state, args.model_path)
+            print(f'  [Epoch {epoch}] New best model saved (val_loss={val_loss:.6f})')
 
-            torch.save(state, model_path)
+        print(
+            f'Epoch {epoch:4d} | '
+            f'Train loss: {tr_loss:.4f} (recon={tr_recon:.4f}, kl={tr_kl:.4f}) | '
+            f'Val loss: {val_loss:.4f} (recon={val_recon:.4f}, kl={val_kl:.4f})'
+        )
 
-        print('Train loss CVAE: {:.6f} \n'.format(tr_loss))
-        print('Train loss Reconstruction: {:.6f} \n'.format(tr_loss_recon))
-        print('Train loss KL: {:.6f} \n'.format(tr_loss_kl))
+    # Plot loss curves
+    epochs = np.arange(args.epochs)
+    plt.figure()
+    plt.plot(epochs, aux_loss[0], label='Train total')
+    plt.plot(epochs, aux_loss[1], label='Train recon')
+    plt.plot(epochs, aux_loss[2], label='Train KL')
+    plt.plot(epochs, aux_loss[3], label='Val total')
+    plt.plot(epochs, aux_loss[4], label='Val recon')
+    plt.plot(epochs, aux_loss[5], label='Val KL')
+    plt.legend()
+    plt.yscale('log')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training curves')
+    plt.tight_layout()
+    plt.show()
 
-        print('Valid loss CVAE: {:.6f} \n'.format(valid_loss))
-        print('Valid loss Reconstruction: {:.6f} \n'.format(valid_loss_recon))
-        print('Valid loss KL: {:.6f} \n'.format(valid_loss_kl))
+    print('Training complete.')
 
-        plt.figure()
-        plt.plot(np.arange(epoch), aux_loss[0, :epoch], label='training CVAE')
-        plt.plot(np.arange(epoch), aux_loss[1, :epoch], label='training reconstruction')
-        plt.plot(np.arange(epoch), aux_loss[2, :epoch], label='training KL')
-        plt.plot(np.arange(epoch), aux_loss[3, :epoch], label='validation CVAE')
-        plt.plot(np.arange(epoch), aux_loss[4, :epoch], label='validation reconstruction')
-        plt.plot(np.arange(epoch),
-                aux_loss[5, :epoch], label='validation KL')
-        plt.legend()
-        plt.yscale('log')
-        plt.show()
 
-    print('Finished Training')
+def main():
+    args = parse_args()
 
-#%% Reconstruction of pressure fields on train and latent vecotors set
-pred_train, true_train, control_train, mu_train, log_var_train = reconstruct(model_CVAE,model_path,train_loader,p_mean,p_std,control_mean,control_std,device='cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Using device: {device}')
+    print(f'Data directory: {args.data_dir}')
+    print(f'Model path: {args.model_path}')
 
-#%% Plotting Reconstruction and Latent Space Visualization
-k=20 #Idx of snapshot to plot
-plot_writer(data_directory,res,pred_train,true_train,control_train,k,mu=mu_train,latent_plot=True)   
+    # Load data
+    train_loader, valid_loader, test_loader, p_mean, p_std, ctrl_mean, ctrl_std = DataLoader(
+        args.data_dir, args.res, args.batch_size
+    )
+    print('Dataset loaded.\n')
 
-#%%Prediction on test set
-pred_test, true_test, control_test = predict_test(model_CVAE,model_path,test_loader,p_mean,p_std,control_mean,control_std,device='cpu')
-#%% Plotting Predictions
-k=44 #Idx of snapshot to plot
-plot_writer(data_directory,res,pred_test,true_test,control_test,k)  
+    # Build model
+    control_dim = 2
+    model = ConditionalVariationalAutoencoder(args.latent_dim, control_dim, args.res)
+    model = model.to(device)
+    print(f'Model: latent_dim={args.latent_dim}, res={args.res}x{args.res}, '
+          f'kl_weight={args.kl_weight}\n')
+
+    # Train or infer
+    if args.train:
+        train(args, model, train_loader, valid_loader, device)
+
+    # Reconstruction on training set + latent space plot
+    pred_train, true_train, ctrl_train, mu_train, _ = reconstruct(
+        model, args.model_path, train_loader,
+        p_mean, p_std, ctrl_mean, ctrl_std, device='cpu'
+    )
+    plot_writer(
+        args.data_dir, args.res,
+        pred_train, true_train, ctrl_train,
+        args.recon_idx, mu=mu_train, latent_plot=True
+    )
+
+    # Prediction on test set
+    pred_test, true_test, ctrl_test = predict_test(
+        model, args.model_path, test_loader,
+        p_mean, p_std, ctrl_mean, ctrl_std, device='cpu'
+    )
+    plot_writer(
+        args.data_dir, args.res,
+        pred_test, true_test, ctrl_test,
+        args.test_idx
+    )
+
+
+if __name__ == '__main__':
+    main()
